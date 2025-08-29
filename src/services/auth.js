@@ -1,6 +1,6 @@
-import * as SecureStore from 'expo-secure-store';
 import apiClient from './api';
 import API_CONFIG from '../config/api';
+import storage from './storage';
 
 class AuthService {
   constructor() {
@@ -20,8 +20,8 @@ class AuthService {
       const { access_token, refresh_token, user } = response.data;
 
       // Store tokens securely
-      await SecureStore.setItemAsync(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN, access_token);
-      await SecureStore.setItemAsync(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN, refresh_token);
+      await storage.setItem(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN, access_token);
+      await storage.setItem(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN, refresh_token);
 
       // Store user data
       this.user = user;
@@ -74,21 +74,21 @@ class AuthService {
 
   // Check if user is authenticated
   async isAuthenticated() {
-    const token = await SecureStore.getItemAsync(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
+    const token = await storage.getItem(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
     return !!token;
   }
 
   // Get stored tokens
   async getTokens() {
-    const accessToken = await SecureStore.getItemAsync(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
-    const refreshToken = await SecureStore.getItemAsync(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN);
+    const accessToken = await storage.getItem(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
+    const refreshToken = await storage.getItem(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN);
     return { accessToken, refreshToken };
   }
 
   // Clear tokens
   async clearTokens() {
-    await SecureStore.deleteItemAsync(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
-    await SecureStore.deleteItemAsync(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN);
+    await storage.removeItem(API_CONFIG.TOKEN_KEYS.ACCESS_TOKEN);
+    await storage.removeItem(API_CONFIG.TOKEN_KEYS.REFRESH_TOKEN);
   }
 
   // Get current user

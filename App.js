@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PaperProvider, ActivityIndicator } from 'react-native-paper';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import authService from './src/services/auth';
 
-export default function App() {
+function AppContent() {
+  const { theme, isDarkMode } = useTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,9 +27,15 @@ export default function App() {
           setUser(result.user);
           setIsAuthenticated(true);
         } else {
-          // Token might be expired
-          await authService.clearTokens();
-          setIsAuthenticated(false);
+          // Profile fetch failed, but we still have a token
+          // Don't clear tokens - the user might still be authenticated
+          console.log('Profile fetch failed, but keeping user authenticated');
+          setIsAuthenticated(true);
+          // Use whatever user data we have from previous login
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+          }
         }
       }
     } catch (error) {
@@ -49,22 +58,34 @@ export default function App() {
 
   if (loading) {
     return (
-      <SafeAreaProvider>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      </SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <SafeAreaProvider>
+          <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        </SafeAreaProvider>
+      </PaperProvider>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      {isAuthenticated ? (
-        <HomeScreen user={user} onLogout={handleLogout} />
-      ) : (
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      )}
-    </SafeAreaProvider>
+    <PaperProvider theme={theme}>
+      <SafeAreaProvider>
+        {isAuthenticated ? (
+          <HomeScreen user={user} onLogout={handleLogout} />
+        ) : (
+          <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        )}
+      </SafeAreaProvider>
+    </PaperProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
@@ -73,6 +94,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
 });

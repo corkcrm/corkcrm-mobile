@@ -7,7 +7,7 @@ const API_CONFIG = {
   BASE_URL: Platform.select({
     ios: 'http://localhost:3000',     // iOS simulator
     android: 'http://10.0.2.2:3000',  // Android emulator
-    web: 'http://localhost:3000',      // Web browser
+    web: '',                           // Web browser - use relative URLs for proxy
     default: 'http://localhost:3000',
   }),
   
