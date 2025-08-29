@@ -1,27 +1,45 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import {
+  TextInput,
+  Button,
+  Text,
+  Card,
+  useTheme,
+  ActivityIndicator,
+  Snackbar,
+  Surface,
+  Headline,
+  Caption,
+} from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import authService from '../services/auth';
 
 const LoginScreen = ({ onLoginSuccess }) => {
+  const theme = useTheme();
   const [email, setEmail] = useState('owner-user@dev-org.com'); // Pre-filled for testing
   const [password, setPassword] = useState('dev-org-owner@123'); // Pre-filled for testing
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState('error'); // 'error' or 'success'
+
+  const showMessage = (message, type = 'error') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setSnackbarVisible(true);
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+      showMessage('Please enter email and password');
       return;
     }
 
@@ -29,20 +47,20 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
     try {
       const result = await authService.login(email, password, {
-        deviceType: Platform.OS === 'ios' ? 'iOS' : 'Android',
-        deviceOS: Platform.Version.toString(),
+        deviceType: Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web',
+        deviceOS: Platform.Version ? String(Platform.Version) : 'unknown',
       });
 
       if (result.success) {
-        Alert.alert('Success', 'Login successful!');
+        showMessage('Login successful!', 'success');
         if (onLoginSuccess) {
           onLoginSuccess(result.user);
         }
       } else {
-        Alert.alert('Login Failed', result.error);
+        showMessage(result.error);
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      showMessage('An unexpected error occurred');
       console.error('Login error:', error);
     } finally {
       setLoading(false);
@@ -50,7 +68,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -60,59 +78,81 @@ const LoginScreen = ({ onLoginSuccess }) => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>CorkCRM Mobile</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
+            <Headline style={[styles.title, { color: theme.colors.primary }]}>
+              CorkCRM Mobile
+            </Headline>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+              Sign in to your account
+            </Text>
           </View>
 
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+          <Card style={styles.formCard} mode="elevated">
+            <Card.Content>
               <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
+                label="Email"
                 value={email}
                 onChangeText={setEmail}
+                mode="outlined"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
+                disabled={loading}
                 style={styles.input}
-                placeholder="Enter your password"
+                left={<TextInput.Icon icon="email" />}
+              />
+
+              <TextInput
+                label="Password"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
+                mode="outlined"
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
-                editable={!loading}
+                disabled={loading}
+                style={styles.input}
+                left={<TextInput.Icon icon="lock" />}
+                right={
+                  <TextInput.Icon
+                    icon={showPassword ? 'eye-off' : 'eye'}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
               />
-            </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
+              <Button
+                mode="contained"
+                onPress={handleLogin}
+                disabled={loading}
+                loading={loading}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+              >
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </Card.Content>
+          </Card>
 
-            <View style={styles.testInfo}>
-              <Text style={styles.testInfoTitle}>Test Credentials:</Text>
-              <Text style={styles.testInfoText}>Email: owner-user@dev-org.com</Text>
-              <Text style={styles.testInfoText}>Password: dev-org-owner@123</Text>
-            </View>
-          </View>
+          <Surface style={[styles.testInfo, { backgroundColor: theme.colors.surfaceVariant }]} elevation={1}>
+            <Caption style={styles.testInfoTitle}>Test Credentials:</Caption>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              Email: owner-user@dev-org.com
+            </Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              Password: dev-org-owner@123
+            </Text>
+          </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        style={snackbarType === 'success' ? { backgroundColor: theme.colors.primary } : {}}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 };
@@ -120,7 +160,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   keyboardView: {
     flex: 1,
@@ -137,69 +176,34 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 10,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  form: {
+  formCard: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
-  },
-  inputContainer: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
   input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333',
+    marginBottom: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#999',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+  buttonContent: {
+    paddingVertical: 8,
   },
   testInfo: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: '#fff',
+    padding: 16,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
   },
   testInfoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
-  },
-  testInfoText: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 4,
   },
 });
 
