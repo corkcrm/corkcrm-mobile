@@ -1,6 +1,6 @@
-# Claude AI Assistant Configuration - CorkCRM Mobile
+# CLAUDE.md
 
-This file contains configuration and context for working with Claude AI on the CorkCRM Mobile app.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 - **Project Name**: CorkCRM Mobile
@@ -83,28 +83,31 @@ Email: owner-user@dev-org.com
 Password: dev-org-owner@123
 ```
 
-## Testing
+## Testing Commands
 
-### iOS Simulator
+### Running Tests
 ```bash
-# Run on specific simulator
+# No test framework is currently configured
+# Tests will need to be set up with Jest or another testing framework
+```
+
+### Linting and Type Checking
+```bash
+# No linting or type checking tools are currently configured
+# Consider adding ESLint and/or TypeScript
+```
+
+### Platform-Specific Testing
+```bash
+# iOS Simulator
 npx expo run:ios --simulator="iPhone 16 Pro"
 
-# Available simulators
-- iPhone 16 Pro
-- iPhone 16 Pro Max
-- iPad Pro 11-inch
-```
-
-### Android Emulator
-```bash
+# Android Emulator
 npm run android
-```
 
-### Physical Device
-1. Update `src/config/api.js` with your computer's IP
-2. Run `npm start`
-3. Scan QR code with Expo Go app
+# Physical Device via Expo Go
+npm start  # Then scan QR code
+```
 
 ## Key Technologies
 
@@ -171,70 +174,96 @@ rm -rf node_modules/.cache
 npm install
 ```
 
-## State Management
-Currently using React hooks and local state. Consider adding:
-- Redux Toolkit for complex state
-- React Query for API cache
-- Zustand for simple global state
+## Architecture Overview
 
-## Planned Features
-- [ ] Contacts list and management
-- [ ] Jobs/Projects tracking
-- [ ] Appointments calendar
-- [ ] Proposals viewing
-- [ ] Push notifications
-- [ ] Offline support
-- [ ] Biometric authentication
+### Navigation Structure
+The app uses a simple conditional rendering pattern for navigation:
+- **App.js**: Main entry point that checks authentication state
+- **LoginScreen**: Displayed when user is not authenticated
+- **HomeScreen**: Displayed when user is authenticated
+- No navigation library currently - screens are swapped based on `isAuthenticated` state
 
-## Security Considerations
-- Tokens stored in secure storage
-- API calls use HTTPS in production
-- Sensitive data not logged
-- Authentication required for all protected routes
+### State Management
+- **Local Component State**: Using React hooks (useState, useEffect)
+- **Theme Context**: Global theme management with dark mode support
+- **Auth State**: Managed in App.js with pass-through props
+- No global state management library currently integrated
 
-## Performance Optimization
-- Lazy loading for screens
-- Image optimization
-- API response caching
-- Minimize re-renders
+### Service Layer Architecture
+- **src/services/api.js**: Axios client with interceptors for token management
+- **src/services/auth.js**: Authentication service singleton pattern
+- **src/services/storage.js**: Abstraction over expo-secure-store
+- Automatic token refresh on 401 responses
 
-## Deployment
+### UI Framework
+- **React Native Paper**: Material Design components with theming
+- **Custom Theme**: Light/dark mode configurations in src/config/theme.js
+- **Safe Area**: Handled via react-native-safe-area-context
 
-### iOS
-1. Configure in Xcode
-2. Set bundle identifier
-3. Archive and upload to App Store Connect
-
-### Android
-1. Configure in Android Studio
-2. Generate signed APK/AAB
-3. Upload to Google Play Console
-
-## Team Guidelines
-- Follow React Native best practices
-- Use functional components with hooks
-- Implement proper error handling
-- Test on both iOS and Android
-- Keep accessibility in mind
-- Document new features in this file
-
-## Rails API Integration
+## Rails Backend Integration
 
 ### Backend Repository
-- **Repo**: corkcrm-upgraded
-- **Branch**: master (merged mobile API endpoints)
-- **Mobile endpoints**: `/api/v1/mobile/*`
+- **Location**: /Users/michaelhenry/Projects/corkcrm-upgraded
+- **Branch**: master
+- **API Namespace**: /api/v1/mobile/*
+- **Required**: Rails server must be running on port 3000
 
-### Required Rails Server
+### Starting the Rails Backend Server
+
+**IMPORTANT**: DO NOT make any changes to the Rails app code or configuration to get it running. The Rails app is already configured and should run as-is.
+
+#### Prerequisites
+- Ruby 2.7.6 (managed via rbenv)
+- All gems are already installed in the repository
+- Database is already set up and migrated
+
+#### Steps to Start Rails Server
 ```bash
+# 1. Navigate to Rails backend directory
 cd /Users/michaelhenry/Projects/corkcrm-upgraded
-rails s -p 3000
+
+# 2. Use rbenv with Ruby 2.7.6 (already configured in .ruby-version)
+# If rbenv isn't loading automatically, use the full path:
+/Users/michaelhenry/.rbenv/shims/bundle exec rails server -p 3000
+
+# Alternative if rbenv is properly configured in your shell:
+bundle exec rails server -p 3000
 ```
 
-## Notes for Claude
-- This is a React Native mobile app for CorkCRM
-- Uses Expo for development and building
-- JWT authentication with Rails backend
-- Supports iOS and Android platforms
-- Focus on user experience and performance
-- Maintain consistency with Rails API
+#### Verify Rails Server is Running
+```bash
+# Test the mobile login endpoint
+curl -X POST http://localhost:3000/api/v1/mobile/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"owner-user@dev-org.com","password":"dev-org-owner@123"}'
+```
+
+#### Important Notes
+- The Rails app uses Rails 5.2.4.5 - DO NOT upgrade Rails version
+- The app uses Ruby 2.7.6 - DO NOT change Ruby version
+- All dependencies are already installed - DO NOT run `bundle install` or modify Gemfile
+- Database is already configured - DO NOT run database setup commands
+- Simply start the server with the existing configuration
+
+### Mobile-Specific Endpoints
+All mobile endpoints use the `/api/v1/mobile/` prefix and return JWT tokens with extended expiry for mobile devices (90 days for refresh tokens).
+
+## Code Conventions
+
+### Component Structure
+- Functional components with hooks
+- Screen components in src/screens/
+- Reusable components should go in src/components/ (not yet created)
+- Services use singleton pattern (see auth.js)
+
+### Error Handling
+- API errors handled in axios interceptors
+- User-friendly error messages displayed
+- Token refresh automatic on 401
+- Network errors gracefully handled
+
+### Styling Approach
+- React Native Paper components for consistency
+- Theme-aware styling using useTheme hook
+- StyleSheet.create for performance
+- Safe area handling on all screens
